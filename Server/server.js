@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import connectDB from "./db.js";
 import authRoutes from "./routes/auth.js";
+import medicineRoutes from "./routes/medicine.js";
 
 dotenv.config();
 
@@ -14,6 +15,7 @@ app.use(cors());
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
+app.use("/api/medicine", medicineRoutes);
 
 app.get("/", (req, res) => {
   res.send("🚀 MediTrack Backend is Running...");

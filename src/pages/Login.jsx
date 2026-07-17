@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { GoogleLogin } from "@react-oauth/google";
-import "./Login.css";  
+import "./Login.css";
 
 function Login() {
   const navigate = useNavigate();
@@ -14,30 +14,44 @@ function Login() {
   async function handleSubmit(e) {
     e.preventDefault();
 
-    const res = await fetch("http://localhost:5000/api/auth/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(form),
-    });
+    try {
+      const res = await fetch("http://localhost:5000/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(form),
+      });
 
-    const data = await res.json();
+      const data = await res.json();
 
-    if (res.ok) {
-      alert("Login Successful");
-      navigate("/");
-    } else {
-      alert(data.message);
+      console.log("STATUS:", res.status);
+      console.log("DATA:", data);
+
+      if (res.ok) {
+        localStorage.setItem(
+          "meditrackUser",
+          JSON.stringify(data.user)
+        );
+
+        alert("Login Successful");
+        navigate("/");
+      } else {
+        alert(data.message);
+      }
+
+    } catch (error) {
+      console.log(error);
+      alert("Server Error");
     }
   }
 
   return (
     <div className="login-page">
-
       <div className="login-card">
 
         <h1>MediTrack</h1>
+
         <p className="subtitle">
           Your health companion
         </p>
@@ -68,11 +82,9 @@ function Login() {
 
         </form>
 
-
         <div className="divider">
           <span>OR</span>
         </div>
-
 
         <GoogleLogin
           onSuccess={async (credentialResponse) => {
@@ -93,9 +105,15 @@ function Login() {
               const data = await res.json();
 
               if (res.ok) {
+
+                localStorage.setItem(
+                  "meditrackUser",
+                  JSON.stringify(data.user)
+                );
+
                 alert("Google Login Successful");
-                console.log(data.user);
                 navigate("/");
+
               } else {
                 alert(data.message);
               }
@@ -111,15 +129,12 @@ function Login() {
           }}
         />
 
-
         <p className="register-text">
           Don't have an account?
           <Link to="/register"> Register</Link>
         </p>
 
-
       </div>
-
     </div>
   );
 }

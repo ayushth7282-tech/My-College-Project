@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Pill,
   Clock,
@@ -18,6 +18,21 @@ function Pharmacy() {
 
   const [medicines, setMedicines] = useState([]);
 
+  useEffect(() => {
+    fetchMedicines();
+  }, []);
+
+  const fetchMedicines = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/api/medicine");
+      const data = await res.json();
+
+      setMedicines(data);
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleChange = (e) => {
     setMedicine({
       ...medicine,
@@ -25,7 +40,7 @@ function Pharmacy() {
     });
   };
 
-  const addMedicine = (e) => {
+  const addMedicine = async (e) => {
     e.preventDefault();
 
     if (
@@ -38,54 +53,76 @@ function Pharmacy() {
       return;
     }
 
-    setMedicines([
-      ...medicines,
-      {
-        id: Date.now(),
-        ...medicine,
-        taken: false,
-      },
-    ]);
+    try {
+      const user = JSON.parse(localStorage.getItem("meditrackUser"));
 
-    setMedicine({
-      name: "",
-      dosage: "",
-      time: "",
-      duration: "",
-    });
+      const res = await fetch("http://localhost:5000/api/medicine/add", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...medicine,
+          userId: user._id,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert("Medicine Added Successfully!");
+
+        setMedicines([...medicines, data.medicine]);
+
+        setMedicine({
+          name: "",
+          dosage: "",
+          time: "",
+          duration: "",
+        });
+      } else {
+        alert(data.message);
+      }
+    } catch (error) {
+      console.log(error);
+      alert("Server Error");
+    }
   };
 
   const markTaken = (id) => {
     setMedicines(
       medicines.map((item) =>
-        item.id === id
+        item._id === id
           ? { ...item, taken: !item.taken }
           : item
       )
     );
   };
 
-  const deleteMedicine = (id) => {
-    setMedicines(
-      medicines.filter((item) => item.id !== id)
-    );
+  const deleteMedicine = async (id) => {
+    try {
+      await fetch(`http://localhost:5000/api/medicine/${id}`, {
+        method: "DELETE",
+      });
+
+      setMedicines(
+        medicines.filter((item) => item._id !== id)
+      );
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
     <div className="feature-page">
-
       <div className="feature-box">
 
         <h1>💊 Medicine Management</h1>
 
-        <p>
-          Manage medicines, reminders and dosage.
-        </p>
+        <p>Manage medicines, reminders and dosage.</p>
 
-        <form
-          className="medicine-form"
-          onSubmit={addMedicine}
-        >
+        <form className="medicine-form" onSubmit={addMedicine}>
+
           <input
             type="text"
             name="name"
@@ -121,6 +158,7 @@ function Pharmacy() {
             <PlusCircle size={18} />
             Add Medicine
           </button>
+
         </form>
 
         <h2 style={{ marginTop: "40px" }}>
@@ -137,9 +175,10 @@ function Pharmacy() {
           medicines.map((item) => (
             <div
               className="medicine-card"
-              key={item.id}
+              key={item._id}
             >
               <div>
+
                 <h3>{item.name}</h3>
 
                 <p>
@@ -161,31 +200,24 @@ function Pharmacy() {
                       : "status active"
                   }
                 >
-                  {item.taken
-                    ? "Taken"
-                    : "Active"}
+                  {item.taken ? "Taken" : "Active"}
                 </span>
+
               </div>
 
               <div className="buttons">
 
                 <button
                   className="taken-btn"
-                  onClick={() =>
-                    markTaken(item.id)
-                  }
+                  onClick={() => markTaken(item._id)}
                 >
                   <CheckCircle size={18} />
-                  {item.taken
-                    ? "Undo"
-                    : "Taken"}
+                  {item.taken ? "Undo" : "Taken"}
                 </button>
 
                 <button
                   className="delete-btn"
-                  onClick={() =>
-                    deleteMedicine(item.id)
-                  }
+                  onClick={() => deleteMedicine(item._id)}
                 >
                   <Trash2 size={18} />
                   Delete
@@ -195,6 +227,7 @@ function Pharmacy() {
             </div>
           ))
         )}
+
       </div>
     </div>
   );

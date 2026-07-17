@@ -47,6 +47,7 @@ router.post("/register", async (req, res) => {
 
 
 router.post("/login", async (req, res) => {
+  console.log(req.body);
   try {
     const { email, password } = req.body;
     
@@ -57,6 +58,7 @@ router.post("/login", async (req, res) => {
     }
 
     const user = await User.findOne({ email });
+    console.log(user);
 
     if (!user) {
       return res.status(400).json({
