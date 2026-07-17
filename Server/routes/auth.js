@@ -1,7 +1,9 @@
 import express from "express";
-import User from "../models/User.js";
+import User from "../models/user.js";
+import { OAuth2Client } from "google-auth-library";
 
 const router = express.Router();
+const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
 router.post("/register", async (req, res) => {
   try {
@@ -26,6 +28,8 @@ router.post("/register", async (req, res) => {
       email,
       password
     });
+
+    console.log("CREATED USER:", user); 
 
     res.status(201).json({
       message: "Registration Successful",
@@ -76,6 +80,44 @@ router.post("/login", async (req, res) => {
 
     res.status(500).json({
       message: "Server Error"
+    });
+  }
+});
+
+router.post("/google", async (req, res) => {
+  try {
+    const { credential } = req.body;
+
+    const ticket = await client.verifyIdToken({
+      idToken: credential,
+      audience: process.env.GOOGLE_CLIENT_ID,
+    });
+
+    const payload = ticket.getPayload();
+
+    const { name, email, picture, sub } = payload;
+
+    let user = await User.findOne({ email });
+
+    if (!user) {
+      user = await User.create({
+        name,
+        email,
+        googleId: sub,
+        profilePicture: picture,
+      });
+    }
+
+    res.status(200).json({
+      message: "Google Login Successful",
+      user,
+    });
+
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Google Authentication Failed",
     });
   }
 });

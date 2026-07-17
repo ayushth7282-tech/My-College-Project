@@ -49,3 +49,17 @@
     color:#6B7280;
     line-height:1.7;
 }
+
+.card-link {
+  text-decoration: none;
+  color: inherit;
+}
+
+.card {
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+}
