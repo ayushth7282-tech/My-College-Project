@@ -1,6 +1,7 @@
 import express from "express";
 import User from "../models/user.js";
 import { OAuth2Client } from "google-auth-library";
+import bcrypt from "bcryptjs";
 
 const router = express.Router();
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
@@ -11,7 +12,7 @@ router.post("/register", async (req, res) => {
 
     if (!name || !email || !password) {
       return res.status(400).json({
-        message: "Please fill all fields"
+        message: "Please fill all fields",
       });
     }
 
@@ -19,69 +20,71 @@ router.post("/register", async (req, res) => {
 
     if (existingUser) {
       return res.status(400).json({
-        message: "Email already registered"
+        message: "Email already registered",
       });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    console.log("Original Password:", password);
+    console.log("Hashed Password:", hashedPassword);
 
     const user = await User.create({
       name,
       email,
-      password
+      password: hashedPassword,
     });
-
-    console.log("CREATED USER:", user); 
 
     res.status(201).json({
       message: "Registration Successful",
-      user
+      user,
     });
 
   } catch (error) {
     console.log(error);
 
     res.status(500).json({
-      message: "Server Error"
+      message: "Server Error",
     });
   }
 });
 
-
 router.post("/login", async (req, res) => {
-  console.log(req.body);
   try {
     const { email, password } = req.body;
-    
+
     if (!email || !password) {
       return res.status(400).json({
-        message: "Please fill all fields"
+        message: "Please fill all fields",
       });
     }
 
     const user = await User.findOne({ email });
-    console.log(user);
 
     if (!user) {
       return res.status(400).json({
-        message: "User not found"
+        message: "User not found",
       });
     }
 
-    if (user.password !== password) {
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
       return res.status(400).json({
-        message: "Incorrect password"
+        message: "Incorrect password",
       });
     }
 
     res.status(200).json({
       message: "Login Successful",
-      user
+      user,
     });
 
   } catch (error) {
     console.log(error);
 
     res.status(500).json({
-      message: "Server Error"
+      message: "Server Error",
     });
   }
 });
